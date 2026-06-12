@@ -33,3 +33,7 @@ Thumbs.db
 *.test
 cpu.pprof
 mem.pprof
+
+# Local certs and temporary scaffold tests
+certs/
+tmp_test/

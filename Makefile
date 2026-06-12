@@ -19,10 +19,20 @@ build:
 	@mkdir -p bin
 	go build -ldflags="-s -w $(LDFLAGS)" -o bin/$(APP_NAME) ./cmd
 
-run:
+certs:
+	@if [ ! -f certs/restapi-cert.pem ] || [ ! -f certs/restapi-key.pem ]; then \
+		echo "Generating self-signed TLS certificates under ./certs..."; \
+		mkdir -p certs; \
+		openssl req -newkey rsa:2048 -nodes -keyout certs/restapi-key.pem \
+			-x509 -days 365 -out certs/restapi-cert.pem \
+			-subj "/C=US/ST=State/L=City/O=Organization/OU=Unit/CN=localhost" 2>/dev/null; \
+		cp certs/restapi-cert.pem certs/restapi-ca.pem; \
+	fi
+
+run: certs
 	@echo "Running {{SERVICE_NAME}} locally..."
-	@if [ -f env/local-dev.env ]; then \
-		set -a && . ./env/local-dev.env && set +a && go run ./cmd; \
+	@if [ -f configs/local-dev.env ]; then \
+		set -a && . ./configs/local-dev.env && set +a && go run ./cmd; \
 	else \
 		go run ./cmd; \
 	fi
@@ -56,10 +66,10 @@ docker-build:
 		--build-arg COMMIT_HASH=$(COMMIT_HASH) \
 		-t $(APP_NAME):latest .
 
-docker-run:
+docker-run: certs
 	@echo "Starting Docker container $(APP_NAME) in foreground..."
 	docker run --rm -it \
-		--env-file env/docker-compose.env \
+		--env-file deployments/docker-compose/$(APP_NAME).env \
 		-v $(PWD)/certs:/app/certs \
-		-p 8088:8088 -p 17007:17007 \
+		-p {{PUBLIC_PORT}}:{{PUBLIC_PORT}} -p {{PRIVATE_PORT}}:{{PRIVATE_PORT}} \
 		$(APP_NAME):latest

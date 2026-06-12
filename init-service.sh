@@ -18,7 +18,7 @@ usage() {
     echo "  target-directory  Optional destination folder. If omitted, runs in-place."
     echo ""
     echo "Example:"
-    echo "  $0 billing-service 16012 17012 ../billing-service"
+    echo "  $0 mango-go-foundation-service 16012 17012 ./tmp_test"
     exit 1
 }
 
@@ -27,20 +27,42 @@ if [ "$#" -lt 3 ]; then
     usage
 fi
 
-SERVICE_NAME=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+SERVICE_NAME=$1
 PUBLIC_PORT=$2
 PRIVATE_PORT=$3
 TARGET_DIR=${4:-"."}
 
-# Validate service-name matches alpha-numeric and hyphens only
-if [[ ! "$SERVICE_NAME" =~ ^[a-z0-9-]+$ ]]; then
-    echo "Error: Service name '$SERVICE_NAME' must only contain lowercase letters, numbers, and hyphens."
+# Validate service-name matches alpha-numeric and hyphens in a clean DNS-compliant format
+if [[ ! "$SERVICE_NAME" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+    echo "Error: Service name '$SERVICE_NAME' must only contain lowercase letters, numbers, and single hyphens. It cannot start or end with a hyphen, or contain consecutive hyphens."
     exit 1
 fi
 
-# Validate ports are numbers
-if [[ ! "$PUBLIC_PORT" =~ ^[0-9]+$ ]] || [[ ! "$PRIVATE_PORT" =~ ^[0-9]+$ ]]; then
-    echo "Error: Ports must be positive integers."
+# Validate ports
+validate_port() {
+    local port=$1
+    local port_type=$2
+    if [[ ! "$port" =~ ^[0-9]+$ ]]; then
+        echo "Error: $port_type port '$port' must be a positive integer."
+        exit 1
+    fi
+    # Check range 1-65535
+    if [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+        echo "Error: $port_type port '$port' must be in the range 1-65535."
+        exit 1
+    fi
+    # Check reserved / privileged ports
+    if [ "$port" -lt 1024 ]; then
+        echo "Error: $port_type port '$port' is in the reserved system port range (below 1024). Please choose a port between 1024 and 65535."
+        exit 1
+    fi
+}
+
+validate_port "$PUBLIC_PORT" "Public"
+validate_port "$PRIVATE_PORT" "Private"
+
+if [ "$PUBLIC_PORT" -eq "$PRIVATE_PORT" ]; then
+    echo "Error: Public port ($PUBLIC_PORT) and Private port ($PRIVATE_PORT) cannot be the same."
     exit 1
 fi
 
@@ -71,12 +93,11 @@ if [ "$TEMPLATE_DIR" != "$TARGET_DIR" ]; then
       "$TEMPLATE_DIR/" "$TARGET_DIR/"
 fi
 
-# 2. Perform string substitutions across all text files
+# 2. Perform string substitutions across all text files safely
 echo "Applying string substitutions..."
 cd "$TARGET_DIR"
 
-# List of files to run substitutions on
-FILES_TO_PROCESS=$(find . -type f \( \
+find . -type f \( \
     -name "*.go" -o \
     -name "*.mod" -o \
     -name "Makefile" -o \
@@ -86,9 +107,7 @@ FILES_TO_PROCESS=$(find . -type f \( \
     -name "*.yml" -o \
     -name "*.md" -o \
     -name "*.sql" \
-    \) -not -path "*/.git/*" -not -name "init-service.sh")
-
-for file in $FILES_TO_PROCESS; do
+    \) -not -path "*/.git/*" -not -name "init-service.sh" -print0 | while IFS= read -r -d '' file; do
     # Replace foundation module path with the new module path
     sed -i "s|github.com/routerarchitects/mango-go-foundation-service|github.com/routerarchitects/$SERVICE_NAME|g" "$file"
     
@@ -115,13 +134,61 @@ else
     echo "Warning: 'go' binary not found. Please run 'go mod tidy' manually in the target folder."
 fi
 
+# Ask user for deployment directory path
+echo ""
+echo "=== Deployment Integration ==="
+read -p "Enter Mango Cloud docker-compose directory path (e.g. /path_to/mango-cloud-deployment/docker-compose): " DEPLOY_DIR
+
+# Expand tilde ~ if present
+DEPLOY_DIR="${DEPLOY_DIR/#\~/$HOME}"
+
+# Resolve absolute path for deploy dir
+if [ -d "$DEPLOY_DIR" ]; then
+    DEPLOY_DIR="$( cd "$DEPLOY_DIR" && pwd )"
+fi
+
+RELATIVE_PATH=""
+if [ "$TEMPLATE_DIR" != "$TARGET_DIR" ]; then
+    RELATIVE_PATH=$(realpath --relative-to="$TEMPLATE_DIR" "$TARGET_DIR")
+fi
+
+# 1. Automate copying env file
+COPY_SUCCESS=false
+if [ -n "$DEPLOY_DIR" ] && [ -d "$DEPLOY_DIR" ]; then
+    cp "$TARGET_DIR/deployments/docker-compose/$SERVICE_NAME.env" "$DEPLOY_DIR/$SERVICE_NAME.env"
+    COPY_SUCCESS=true
+fi
+
 echo ""
 echo "Success! Service '$SERVICE_NAME' has been initialized."
 echo ""
 echo "Next Steps:"
-echo "  1. Copy 'deployments/docker-compose/$SERVICE_NAME.env' to your deployment directory:"
-echo "     $ cp deployments/docker-compose/$SERVICE_NAME.env /openwifi-sdk/mango-cloud-deployment/docker-compose/"
-echo "  2. Append the compose service defined in 'deployments/docker-compose/docker-compose.yaml' to:"
-echo "     /openwifi-sdk/mango-cloud-deployment/docker-compose/docker-compose.yml"
-echo "  3. Start writing your endpoints in 'internal/http/routes/routes.go' and services in 'internal/services/services.go'."
+
+if [ "$COPY_SUCCESS" = true ]; then
+    echo "  1. Environment file successfully copied to:"
+    echo "     $DEPLOY_DIR/$SERVICE_NAME.env"
+else
+    echo "  1. Copy the environment file to your docker-compose directory:"
+    echo "     $ cp $TARGET_DIR/deployments/docker-compose/$SERVICE_NAME.env /path_to/mango-cloud-deployment/docker-compose/"
+fi
+
+if [ -n "$DEPLOY_DIR" ]; then
+    echo "  2. Append the following compose service snippet to '$DEPLOY_DIR/docker-compose.yml':"
+else
+    echo "  2. Append the following compose service snippet to '/path_to/mango-cloud-deployment/docker-compose/docker-compose.yml':"
+fi
+echo "--------------------------------------------------------------------------------"
+sed -n '/services:/,$p' "$TARGET_DIR/deployments/docker-compose/docker-compose.yaml" | tail -n +2
+echo "--------------------------------------------------------------------------------"
+
+if [ -n "$DEPLOY_DIR" ]; then
+    echo "  3. Go to $DEPLOY_DIR and run docker compose up."
+else
+    echo "  3. Go to /path_to/mango-cloud-deployment/docker-compose and run docker compose up."
+fi
+
+if [ -n "$RELATIVE_PATH" ]; then
+    echo "  4. Delete the temporary initialization folder:"
+    echo "     $ rm -rf $RELATIVE_PATH"
+fi
 echo ""

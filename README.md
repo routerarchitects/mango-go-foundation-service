@@ -54,7 +54,7 @@ To instantiate a new service using this foundation template:
 
 2. **Example**:
    ```bash
-   ./init-service.sh billing-service 16012 17012 ../billing-service
+   ./init-service.sh mango-go-foundation-service 16012 17012 ../mango-go-foundation-service
    ```
 
 3. Navigate to the generated directory and start customizing.
@@ -99,7 +99,7 @@ make docker-build
 
 3. Re-launch the compose deployment:
    ```bash
-   docker compose up -d
+   docker compose up -d --build <your-service-name>
    ```
 
 ---
