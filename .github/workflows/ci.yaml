@@ -18,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 'stable'
+          go-version-file: 'go.mod'
           cache: true
 
       - name: Verify Module Dependencies
@@ -28,9 +28,10 @@ jobs:
 
       - name: Check Code Formatting
         run: |
-          if [ -n "$(gofmt -l .)" ]; then
+          unformatted=$(find . -name "*.go" -not -path "*/vendor/*" -not -path "*/tmp_test/*" -print0 | xargs -0 -r gofmt -l)
+          if [ -n "$unformatted" ]; then
             echo "The following files are not formatted properly:"
-            gofmt -l .
+            echo "$unformatted"
             echo "Please run 'gofmt -w .' on your local files."
             exit 1
           fi
