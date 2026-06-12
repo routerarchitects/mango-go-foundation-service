@@ -37,25 +37,24 @@ func NewServiceAuth(
 	privateCfg auth.InternalAPIKeyConfig,
 	validator *owsec.SecurityClient,
 ) (*ServiceAuth, error) {
+	// Configure public auth handler (bypassed if AUTH_ENABLED=false)
+	var publicAuth fiber.Handler
 	if !authEnabled {
-		bypass := func(c fiber.Ctx) error {
+		publicAuth = func(c fiber.Ctx) error {
 			return c.Next()
 		}
-		return &ServiceAuth{
-			publicAuth:  bypass,
-			privateAuth: bypass,
-		}, nil
+	} else {
+		if publicCfg.Validator == nil {
+			publicCfg.Validator = validator
+		}
+		var err error
+		publicAuth, err = auth.RequirePublicAuth(publicCfg)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if publicCfg.Validator == nil {
-		publicCfg.Validator = validator
-	}
-
-	publicAuth, err := auth.RequirePublicAuth(publicCfg)
-	if err != nil {
-		return nil, err
-	}
-
+	// Configure private auth handler (always enforced for security)
 	privateAuth, err := auth.RequireInternalAPIKey(privateCfg)
 	if err != nil {
 		return nil, err

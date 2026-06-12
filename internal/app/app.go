@@ -29,6 +29,13 @@ type App struct {
 
 // New initializes all dependencies and builds the App.
 func New(ctx context.Context, cfg *config.Config, rootLog *slog.Logger) (*App, error) {
+	// Validate authentication configuration dependencies
+	if cfg.Auth.Enabled {
+		if !cfg.Discovery.Enabled || !cfg.RPC.Enabled {
+			return nil, fmt.Errorf("invalid configuration: public authentication (AUTH_ENABLED) requires both service discovery (DISCOVERY_ENABLED) and service RPC (SERVICE_RPC_ENABLED) to be enabled")
+		}
+	}
+
 	// 1. Establish database connection pool
 	database, err := db.Connect(ctx, cfg.Database, logger.Subsystem("db"))
 	if err != nil {
