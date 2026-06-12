@@ -11,7 +11,7 @@ A standardized, production-ready microservice foundation skeleton for the Mango 
 │   └── workflows/
 │       └── ci.yaml              # Continuous Integration workflow configuration
 ├── cmd/
-│   └── main.go                  # Service startup coordinator and lifecycle manager
+│   └── main.go                  # Boilerplate entrypoint (Config load, Logger init, runs App, OS signals)
 ├── db/
 │   └── schema/                  # SQL schema migrations directory
 │       └── 0001_initial.sql     # Placeholder SQL table setup
@@ -28,6 +28,8 @@ A standardized, production-ready microservice foundation skeleton for the Mango 
 ├── external/                    # Third-party API client integration wrappers
 │   └── README.md                # Developer guide for external adapters
 ├── internal/
+│   ├── app/                     # Application wiring and dependency injection
+│   │   └── app.go               # Dynamic struct creation, DB pool, and module boot
 │   ├── config/                  # caarlos0/env environment parsing
 │   ├── db/                      # Connection pool (pgxpool) & migration engine
 │   ├── http/                    # Routing, middleware, and Dual TLS engine
@@ -38,7 +40,7 @@ A standardized, production-ready microservice foundation skeleton for the Mango 
 ├── Dockerfile                   # Multi-stage production container configuration
 ├── init-service.sh              # Scaffolding helper script to rename/configure
 ├── Makefile                     # Build, run, test, and containerize commands
-└── README.md                    # This developer guide
+├── README.md                    # This developer guide
 ```
 
 ---
@@ -68,16 +70,18 @@ To instantiate a new service using this foundation template:
 * PostgreSQL and Kafka running (or forwarded to `localhost`)
 
 ### Steps
-1. Populate certificates under a `./certs` directory in your workspace:
-   * `./certs/restapi-cert.pem`
-   * `./certs/restapi-key.pem`
-   * `./certs/restapi-ca.pem`
-   *(Self-signed certificates generated during container launch can be copied over).*
-
-2. Source the local dev environment variables and run:
+1. Start the service locally:
    ```bash
    make run
-   # OR: source configs/local-dev.env && go run ./cmd
+   ```
+   *(Note: The Makefile will automatically generate self-signed TLS certificates under `./certs/` if they do not exist).*
+
+2. Alternatively, you can run it manually:
+   ```bash
+   # Make sure self-signed certs exist first
+   make certs
+   # Run with sourced configurations
+   source configs/local-dev.env && go run ./cmd
    ```
 
 ---
@@ -90,14 +94,16 @@ make docker-build
 ```
 
 ### 2. Integrate with Mango Cloud Compose Stack
-1. Copy the generated service env file to the `mango-cloud-deployment/docker-compose/` folder:
+1. When you run `./init-service.sh`, prompt for the path of your `docker-compose` directory. The script will automatically copy the generated `.env` configuration file to that directory.
+
+2. Alternatively, copy it manually:
    ```bash
-   cp deployments/docker-compose/<your-service-name>.env /openwifi-sdk/mango-cloud-deployment/docker-compose/
+   cp deployments/docker-compose/<your-service-name>.env /path_to/mango-cloud-deployment/docker-compose/
    ```
 
-2. Copy the pre-configured service block from `deployments/docker-compose/docker-compose.yaml` and paste it inside the `services:` declaration of `/openwifi-sdk/mango-cloud-deployment/docker-compose/docker-compose.yml`.
+3. Paste the service block displayed on the screen (or from `deployments/docker-compose/docker-compose.yaml`) inside the `services:` block of your deployment's `docker-compose.yml`.
 
-3. Re-launch the compose deployment:
+4. Re-launch the compose deployment:
    ```bash
    docker compose up -d --build <your-service-name>
    ```
