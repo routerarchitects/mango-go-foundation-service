@@ -9,7 +9,7 @@ WORKDIR /src/mango-go-foundation-service
 
 # Cache dependencies
 COPY go.mod go.sum* ./
-RUN --mount=type=cache,target=/go/pkg/mod go mod download
+RUN go mod download
 
 # Copy source code
 COPY . .
@@ -24,14 +24,10 @@ ENV CGO_ENABLED=0 \
     GOFLAGS=-buildvcs=false
 
 # Run tests before compiling
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go test ./...
+RUN go test ./...
 
 # Compile with LDFlags for buildinfo package injection
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    mkdir -p /out && \
+RUN mkdir -p /out && \
     VERSION_VALUE="${VERSION:-$(git describe --tags 2>/dev/null || echo -n 'v0.1.0')}" && \
     BUILD_TIMESTAMP_VALUE="${BUILD_TIMESTAMP:-$(date -u +%s)}" && \
     COMMIT_HASH_VALUE="${COMMIT_HASH:-$(git rev-parse --short HEAD 2>/dev/null || echo unknown)}" && \
