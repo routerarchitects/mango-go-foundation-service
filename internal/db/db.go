@@ -82,10 +82,9 @@ func (db *Database) Close() {
 func (db *Database) RunMigrations(ctx context.Context, schemaDir string) error {
 	db.log.InfoContext(ctx, "checking database migrations", "directory", schemaDir)
 
-	// Ensure the migration directory exists. If it doesn't, skip migrations.
+	// Ensure the migration directory exists. If it doesn't, fail startup.
 	if _, err := os.Stat(schemaDir); os.IsNotExist(err) {
-		db.log.WarnContext(ctx, "schema directory does not exist, skipping database migrations", "path", schemaDir)
-		return nil
+		return apperror.New(apperror.CodeInternal, fmt.Sprintf("database migrations directory '%s' does not exist", schemaDir))
 	}
 
 	// Initialize tracking table
