@@ -41,6 +41,7 @@ paths:
     get:
       summary: "Liveness probe"
       description: "Checks if the service is running and healthy. This route is unauthenticated and accessible on both the public and private ports."
+      security: []
       responses:
         "200":
           description: "Service is healthy and running"
@@ -97,6 +98,11 @@ paths:
           description: "Invalid command or malformed body"
 
   /api/v1/items:
+    servers:
+      - url: "https://{host}:{publicPort}"
+        description: "Public HTTP API Interface"
+    security:
+      - PublicTokenAuth: []
     get:
       summary: "List all items"
       responses:
@@ -125,6 +131,11 @@ paths:
           description: "Invalid input"
 
   /api/v1/items/{id}:
+    servers:
+      - url: "https://{host}:{publicPort}"
+        description: "Public HTTP API Interface"
+    security:
+      - PublicTokenAuth: []
     get:
       summary: "Get an item by ID"
       parameters:

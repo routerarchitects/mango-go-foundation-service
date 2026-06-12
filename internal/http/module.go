@@ -75,7 +75,6 @@ func NewModule(deps Dependencies) (*Module, error) {
 	// Configure private routes
 	routes.RegisterPrivate(privateApp, routes.PrivateDeps{
 		AuthHandler: authMiddleware.GetPrivateAuthHandler(),
-		Item:        deps.ItemHandler,
 		Subsystem:   deps.SubsystemConfig,
 	})
 

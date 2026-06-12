@@ -14,7 +14,6 @@ type PublicDeps struct {
 
 type PrivateDeps struct {
 	AuthHandler fiber.Handler
-	Item        *handlers.ItemHandler
 	Subsystem   subsysteroutes.Config
 }
 
@@ -38,9 +37,6 @@ func RegisterPrivate(app *fiber.App, deps PrivateDeps) {
 
 	// Create authenticated route group
 	group := app.Group("", deps.AuthHandler)
-
-	// Register business REST endpoints (often identical or administrative only)
-	registerItemRoutes(group, deps.Item)
 
 	// Register system diagnostics routes
 	subsysteroutes.RegisterRoutes(deps.Subsystem, group)
