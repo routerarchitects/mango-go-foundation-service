@@ -68,7 +68,7 @@ COPY --from=builder /src/mango-go-foundation-service/db /app/db
 RUN adduser -D -u 65532 appuser
 USER appuser
 
-# Expose Public Port (8088) and Private/System Port (17007)
-EXPOSE 8088 17007
+# Expose Public Port (16010) and Private/System Port (17010)
+EXPOSE 16010 17010
 
 ENTRYPOINT ["/app/mango-go-foundation-service"]

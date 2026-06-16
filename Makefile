@@ -16,8 +16,7 @@ all: build
 
 build:
 	@echo "Compiling {{SERVICE_NAME}} binary..."
-	@mkdir -p bin
-	go build -ldflags="-s -w $(LDFLAGS)" -o bin/$(APP_NAME) ./cmd
+	go build -ldflags="-s -w $(LDFLAGS)" -o $(APP_NAME) ./cmd
 
 certs:
 	@if [ ! -f certs/restapi-cert.pem ] || [ ! -f certs/restapi-key.pem ]; then \
@@ -55,7 +54,7 @@ lint:
 
 clean:
 	@echo "Cleaning build outputs..."
-	rm -rf bin/
+	rm -f $(APP_NAME)
 
 docker-build:
 	@echo "Building Docker image $(APP_NAME):latest..."

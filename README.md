@@ -38,55 +38,71 @@ A standardized, production-ready microservice foundation skeleton for the Mango 
 ├── .dockerignore                # Exclusions for Docker build context
 ├── .gitignore                   # Exclusions for Git repository
 ├── Dockerfile                   # Multi-stage production container configuration
-├── init-service.sh              # Scaffolding helper script to rename/configure
 ├── Makefile                     # Build, run, test, and containerize commands
 ├── README.md                    # This developer guide
 ```
 
 ---
 
-## Scaffolding a New Service
+## Phase 1: Scaffolding a New Service
 
-To instantiate a new service using this foundation template:
+To initialize a new repository using this foundation template:
 
-1. Execute the `init-service.sh` script, providing your new service name, public API port, private API port, and target directory:
+1. **Clone the template directly** into your new service directory:
    ```bash
-   ./init-service.sh <new-service-name> <public-port> <private-port> [target-directory]
+   git clone git@github.com:routerarchitects/mango-go-foundation-service.git <new-service-name>
+   cd <new-service-name>
    ```
 
-2. **Example**:
+2. **Detach the template's git history:**
    ```bash
-   ./init-service.sh mango-go-foundation-service 16012 17012 ../mango-go-foundation-service
+   rm -rf .git
    ```
 
-3. Navigate to the generated directory and start customizing.
-
----
-
-## Local Development (Outside Docker)
-
-### Prerequisites
-* Go 1.25+ installed
-* PostgreSQL and Kafka running (or forwarded to `localhost`)
-
-### Steps
-1. Start the service locally:
+3. **Initialize and push the template as the first commit:**
    ```bash
-   make run
-   ```
-   *(Note: The Makefile will automatically generate self-signed TLS certificates under `./certs/` if they do not exist).*
-
-2. Alternatively, you can run it manually:
-   ```bash
-   # Make sure self-signed certs exist first
-   make certs
-   # Run with sourced configurations
-   source configs/local-dev.env && go run ./cmd
+   git init
+   git add .
+   git commit -m "Initial service scaffold"
+   git branch -M main
+   git remote add origin git@github.com:routerarchitects/<new-service-name>.git
+   git push -u origin main
    ```
 
 ---
 
-## Docker Integration
+## Phase 2: Configuring your New Service
+
+Once you have initialized the repository (Phase 1), run the following commands to customize the service name and port bindings:
+
+1. **Customize the service name and ports**:
+   Define your service settings as environment variables, then run the customization and rename commands:
+   ```bash
+   # 1. Define your new service configurations (e.g. PUBLIC_PORT="16010", PRIVATE_PORT="17010"):
+   export NEW_SERVICE_NAME="<new-service-name>"
+   export PUBLIC_PORT="<public-port>"
+   export PRIVATE_PORT="<private-port>"
+
+   # 2. Customize all files using the variables:
+   find . -type f -not -path '*/.git/*' -exec sed -i \
+       -e "s/{{SERVICE_NAME}}/${NEW_SERVICE_NAME}/g" \
+       -e "s/mango-go-foundation-service/${NEW_SERVICE_NAME}/g" \
+       -e "s/{{PUBLIC_PORT}}/${PUBLIC_PORT}/g" \
+       -e "s/{{PRIVATE_PORT}}/${PRIVATE_PORT}/g" {} +
+
+   # 3. Rename the compose environment file:
+   mv deployments/docker-compose/docker-compose.env deployments/docker-compose/${NEW_SERVICE_NAME}.env
+   ```
+
+2. **Commit your customization changes**:
+   ```bash
+   git add .
+   git commit -m "refactor: rename service and customize ports"
+   ```
+
+---
+
+## Phase 3: Docker Integration
 
 ### 1. Build the Image
 ```bash
@@ -94,26 +110,16 @@ make docker-build
 ```
 
 ### 2. Integrate with Mango Cloud Compose Stack
-1. When you run `./init-service.sh`, prompt for the path of your `docker-compose` directory. The script will automatically copy the generated `.env` configuration file to that directory.
-
-2. Alternatively, copy it manually:
+1. Copy the customized environment file manually:
    ```bash
-   cp deployments/docker-compose/<your-service-name>.env /path_to/mango-cloud-deployment/docker-compose/
+   cp deployments/docker-compose/${NEW_SERVICE_NAME}.env /path_to/mango-cloud-deployment/docker-compose/
    ```
 
-3. Paste the service block displayed on the screen (or from `deployments/docker-compose/docker-compose.yaml`) inside the `services:` block of your deployment's `docker-compose.yml`.
+2. Paste the service block from `deployments/docker-compose/docker-compose.yaml` inside the `services:` block of your deployment's `docker-compose.yml`.
 
-4. Re-launch the compose deployment:
+3. Re-launch the compose deployment:
    ```bash
-   docker compose up -d --build <your-service-name>
+   docker compose up
    ```
 
----
 
-## Database Migrations
-Migrations are managed dynamically. When the service boots up:
-1. It validates the database connection.
-2. It verifies the presence of the `schema_migrations` tracking table.
-3. It scans the `db/schema/` directory for `.sql` files.
-4. Any SQL files that have not been registered are executed sequentially in individual SQL transactions.
-5. If a migration fails, the transaction is rolled back and the service blocks startup to prevent running on a broken schema.
