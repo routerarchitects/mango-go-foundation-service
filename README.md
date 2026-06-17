@@ -48,25 +48,26 @@ A standardized, production-ready microservice foundation skeleton for the Mango 
 
 To initialize a new repository using this foundation template:
 
-1. **Clone the template directly** into your new service directory:
+1. **Clone both the template and your new repository in a workspace:**
    ```bash
-   git clone git@github.com:routerarchitects/mango-go-foundation-service.git <new-service-name>
+   mkdir <workspace-dir>
+   cd <workspace-dir>
+   git clone git@github.com:routerarchitects/mango-go-foundation-service.git
+   git clone git@github.com:routerarchitects/<new-service-name>.git
+   ```
+
+2. **Copy the template files into your new repository:**
+   ```bash
    cd <new-service-name>
+   git checkout -b base-service-scaffold
+   cp -rf ../mango-go-foundation-service/!(.git|.idea|.vscode|tmp|bin) .
    ```
 
-2. **Detach the template's git history:**
+3. **Commit and push the scaffold as the first commit:**
    ```bash
-   rm -rf .git
-   ```
-
-3. **Initialize and push the template as the first commit:**
-   ```bash
-   git init
    git add .
    git commit -m "Initial service scaffold"
-   git branch -M main
-   git remote add origin git@github.com:routerarchitects/<new-service-name>.git
-   git push -u origin main
+   git push origin base-service-scaffold
    ```
 
 ---
