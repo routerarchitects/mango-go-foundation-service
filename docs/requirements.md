@@ -2,6 +2,14 @@
 
 This document details the functional and non-functional requirements for the **{{SERVICE_NAME}}** microservice.
 
+Detailed Behavior is described in the following documents:
+
+| Document | Purpose |
+|---|---|
+| `docs/phase-1/design.md` | Design |
+| `docs/phase-1/openapi.yaml` | OpenAPI-style API contract |
+| `docs/phase-1/testcase.md` | Test cases and validation matrices |
+
 ---
 
 ## 1. Executive Summary
