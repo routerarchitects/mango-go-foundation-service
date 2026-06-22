@@ -72,13 +72,28 @@ To initialize a new repository using this foundation template:
    git push origin base-service-scaffold
    ```
 
+4. **Merge the base scaffold to your main branch**:
+   To establish a clean baseline in your repository:
+   * Open a Pull Request (PR) on GitHub from `base-service-scaffold` to your main branch (e.g., `main` or `master`).
+   * Review and merge the PR.
+   * Switch back to your local main branch and pull the merged changes:
+     ```bash
+     git checkout main
+     git pull origin main
+     ```
+
 ---
 
 ## Phase 2: Configuring your New Service
 
-Once you have initialized the repository (Phase 1), run the following commands to customize the service name and port bindings:
+Once the clean base scaffold is merged into your main branch (Phase 1), create a new configuration branch to customize the template:
 
-1. **Customize the service name and ports**:
+1. **Create a customization branch**:
+   ```bash
+   git checkout -b configure-service
+   ```
+
+2. **Customize the service name and ports**:
    Define your service settings as environment variables, then run the customization and rename commands:
    ```bash
    # 1. Define your new service configurations (e.g. PUBLIC_PORT="16010", PRIVATE_PORT="17010"):
@@ -97,11 +112,14 @@ Once you have initialized the repository (Phase 1), run the following commands t
    mv deployments/docker-compose/docker-compose.env deployments/docker-compose/${NEW_SERVICE_NAME}.env
    ```
 
-2. **Commit your customization changes**:
+3. **Commit and push your customization changes**:
    ```bash
    git add .
    git commit -m "refactor: rename service and customize ports"
+   git push origin configure-service
    ```
+   * Open a Pull Request from `configure-service` to your main branch.
+   * Merge the PR to complete the service initialization!
 
 ---
 
