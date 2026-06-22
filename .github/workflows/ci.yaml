@@ -6,16 +6,24 @@ on:
   pull_request:
     branches: [ main, master ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Set up Go Environment
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
@@ -25,6 +33,11 @@ jobs:
         run: |
           go mod download
           go mod verify
+
+      - name: Verify Module Consistency
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
 
       - name: Check Code Formatting
         run: |
@@ -36,7 +49,13 @@ jobs:
             exit 1
           fi
 
-      - name: Run Unit Tests
+      - name: Run Static Analysis (go vet)
+        run: go vet ./...
+
+      - name: Validate OpenAPI Specification
+        run: npx -y @redocly/cli lint docs/phase-1/openapi.yaml
+
+      - name: Run Unit and Integration Tests
         run: |
           # Mock the required environment variables enforced by the discovery and logger libraries
           export SERVICE_NAME="mango-go-foundation-service"
@@ -48,6 +67,6 @@ jobs:
           
           go test -v -race ./...
 
-      - name: Compile Binary
+      - name: Build Service Binary
         run: |
           make build

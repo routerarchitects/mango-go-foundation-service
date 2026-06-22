@@ -8,7 +8,7 @@ Detailed Behavior is described in the following documents:
 |---|---|
 | `docs/phase-1/design.md` | Design |
 | `docs/phase-1/openapi.yaml` | OpenAPI-style API contract |
-| `docs/phase-1/testcase.md` | Test cases and validation matrices |
+| `docs/phase-1/testcases.md` | Test cases and validation matrices |
 
 ---
 
