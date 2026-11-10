@@ -67,9 +67,10 @@ func printSummaryTable() {
 	fmt.Println("-------------------------------------------------------------------------------------------------------------------------------------")
 	for i, r := range results {
 		color := "32"
-		if r.Status == "FAIL" {
+		switch r.Status {
+		case "FAIL":
 			color = "31"
-		} else if r.Status == "SKIP" {
+		case "SKIP":
 			color = "33"
 		}
 		statusStr := fmt.Sprintf("\033[%sm%s\033[0m", color, r.Status)
@@ -106,7 +107,7 @@ func TestRoutesLiveness(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to test liveness probe: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		bodyBytes, _ := io.ReadAll(resp.Body)
 
