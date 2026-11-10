@@ -2,6 +2,34 @@
 
 A standardized, production-ready microservice foundation skeleton for the Mango Cloud (OpenWiFi) environment. This service provides a pre-configured architecture featuring dual-port HTTP server separation, PostgreSQL integration, automated schema migrations, and Service Discovery out-of-the-box.
 
+## About Mango Cloud
+
+[Mango Cloud](https://www.mangowifi.cloud/) is Router Architects' open-source platform for managed Wi-Fi and connectivity operations. Purpose built for ISPs, MSPs, Edge AI and IoT service provider.
+
+Built around the OpenLAN and OpenWiFi ecosystem, Mango Cloud provides a cloud operations layer for provisioning, monitoring, device lifecycle management, subscriber and tenant workflows, analytics, topology, and provider integrations across access points, gateways, switches, and CPE.
+
+## Role of this Repository
+
+`mango-go-foundation-service` provides the standardized Go microservice foundation used to build new Mango Cloud backend services.
+
+It provides reusable patterns for:
+
+- HTTP service architecture
+- PostgreSQL integration
+- Database migrations
+- Service discovery
+- Configuration management
+- Docker deployment
+- API specification
+- CI workflows
+- Testing and technical documentation
+
+New Mango Cloud services can use this repository as a common starting point so that services follow consistent architecture, deployment, and operational conventions.
+
+- [Mango Cloud](https://www.mangowifi.cloud/)
+- [Mango Cloud Deployment](https://github.com/routerarchitects/mango-cloud-deployment)
+- [Router Architects](https://www.routerarchitects.com/)
+  
 ---
 
 ## Folder Structure
